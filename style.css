@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.grid-item img {
+    width: 100%;
+}
+
+.banner {
+    width: 3000px;
+    height: 1000px;
+    background-color: lightgray;
+    margin: 20px auto;
+}
