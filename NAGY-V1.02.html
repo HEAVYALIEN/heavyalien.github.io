@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Art Generator</title>
+</head>
+
+<body>
+    <h1>Art Generator</h1>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding-top: 50px;
+            padding-bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Canvas styles */
+        #myCanvas {
+            border: 4px solid #000000;
+            max-height: 600px;
+        }
+
+        /* Button styles */
+        button {
+            background-color: #008CBA;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        /* Generate button styles */
+        #generateButton {
+            background-color: #008CBA;
+        }
+
+        /* Save button styles */
+        #saveButton {
+            background-color: #4CAF50;
+        }
+
+        /* Input range styles */
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            cursor: pointer;
+            background: #ddd;
+            border-radius: 1px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #008CBA;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+        }
+
+        input[type="range"]:focus::-webkit-slider-runnable-track {
+            background: #ccc;
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 5px;
+            cursor: pointer;
+            background: #ddd;
+            border-radius: 1px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border: 0;
+            border-radius: 50%;
+            background: #008CBA;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-ms-track {
+            width: 100%;
+            height: 5px;
+            cursor: pointer;
+            background: transparent;
+            border-color: transparent;
+            color: transparent;
+        }
+
+        input[type="range"]::-ms-fill-lower {
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-ms-fill-upper {
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-ms-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #008CBA;
+            cursor: pointer;
+            margin-top: 0px;
+            /*Needed to keep the Edge thumb centred*/
+        }
+
+        input[type="range"]:focus::-ms-fill-lower {
+            background: #ccc;
+        }
+
+        input[type="range"]:focus::-ms-fill-upper {
+            background: #ccc;
+        }
+    </style>
+    <div class="container">
+        <div class="slider">
+            <label for="numShapes">Number of Shapes:</label>
+            <input type="range" id="numShapes" min="1" max="100" value="10" />
+            <span id="numShapesValue">10</span>
+        </div>
+
+        <div>
+            <label for="colorPalette">Color Palette:</label>
+            <input type="range" id="colorPalette" min="0" max="5" value="0">
+            <span id="colorPaletteValue">0</span>
+        </div>
+
+        <div>
+            <label for="shapeSize">Shape Size:</label>
+            <input type="range" id="shapeSize" min="10" max="500" value="50" />
+            <span id="shapeSizeValue">50</span>
+        </div>
+
+        <div>
+            <label for="canvasSize">Canvas Size:</label>
+            <input type="range" id="canvasSize" min="600" max="6000" value="600" />
+            <span id="canvasSizeValue">600</span>
+        </div>
+        <div class="buttons">
+            <button id="generateButton">Generate</button>
+            <button id="saveButton">Save</button>
+        </div>
+    </div>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+
+    <script>
+        // MAIN CANVAS
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        const canvasSizeInput = document.getElementById("canvasSize");
+        const canvasSizeValue = document.getElementById("canvasSizeValue");
+        const numShapesSlider = document.getElementById("numShapes");
+        const shapeSizeSlider = document.getElementById("shapeSize");
+        const colorPaletteSlider = document.getElementById("colorPalette");
+
+        // CHANGE THE COLOUR PALETTES
+        const colorPalettes = [
+            ["#b92c35", "#5a5a52", "#e6dfc7", "#17140d", "#dcd1b5"], // NAGY - Vintage
+            ["#ab3533", "#141420", "#756a7a", "#efeef3", "#e8e0de"], // NAGY - Original
+            ["#024264", "#673504", "#E0712E", "#3F4D36", "#DD4601", "#EAE0AF"], // NAGY - UNTITLED
+            ["#A03D2D", "#97A49A", "#0D0202", "#6E8E8B", "#CACCBE"], // NAGY - UNTITLED
+            ["#E3CD3D", "#EDE6E0", "#CA3129", "#623124", "#110E17"], // NAGY - UNTITLED
+            //["#1240E7", "#161917", "#EF151E", "#159D1A", "#EFECEF"] // BATZ
+        ];
+
+        // DEFINE THE SHAPES THAT WILL BE DRAWN ON THE CANVAS
+        const shapes = [
+            { type: 'rectangle' },
+            { type: 'sparse-rectangle' },
+            { type: 'circle' },
+            { type: 'smaller-circle'}
+            // Add more shapes as needed
+        ];
+
+        // RANDOMLY GENERATE CANVAS BACKGROUND COLOUR FROM RANGE
+        function generateBackground(colorRange) {
+            const color = colorRange[Math.floor(Math.random() * colorRange.length)];
+            const rgb = hexToRgb(color);
+            ctx.fillStyle = `rgb(${rgb})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // RANDOMLY GENERATE AND DRAW THE SHAPES ON THE CANVAS
+        function generateShapes(numShapes, colorRange, shapeSize) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            generateBackground(colorRange);
+
+            for (let i = 0; i < numShapes; i++) {
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                const color = colorRange[Math.floor(Math.random() * colorRange.length)];
+                const transparency = randomTransparency(0.5, 1);
+                const rgb = hexToRgb(color); // Define rgb here
+                ctx.fillStyle = `rgba(${rgb}, ${transparency})`;
+
+                if (shape.type === 'circle') {
+                    const radius = (shapeSize ? shapeSize : shape.radius) * 2;
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                else if (shape.type === 'rectangle') {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const w = Math.random() * canvas.width / 2;
+                    const h = Math.random() * canvas.height / 2;
+                    ctx.globalCompositeOperation = 'overlay';
+                    ctx.fillRect(x, y, w, h);
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+
+                else if (shape.type === 'sparse-rectangle') {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const w = Math.random() * canvas.width / 2;
+                    const h = Math.random() * canvas.height / 2;
+                    ctx.strokeStyle = `rgba(${rgb}, ${transparency})`;
+                    ctx.lineWidth = 3;
+                    const numLines = 10;
+                    const lineSpacing = w / numLines;
+                    for (let i = 0; i <= numLines; i++) {
+                        const lineX = x + i * lineSpacing;
+                        const startY = y;
+                        const endY = y + h;
+                        ctx.beginPath();
+                        ctx.moveTo(lineX, startY);
+                        ctx.lineTo(lineX, endY);
+                        ctx.stroke();
+                    }
+                    ctx.fill();
+                }
+
+                else if (shape.type === 'smaller-circle') {
+                    const radius = shapeSize ? shapeSize : shape.radius;
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                
+                }
+            }
+        }
+
+        // ADD A NOISE FUNCTION
+        function addNoise() {
+            const pixelSize = 1; // size of each pixel
+            const density = 0.05; // percentage of the canvas area to fill with pixels
+            const numPixels = Math.floor(canvas.width * canvas.height * density / pixelSize ** 2);
+
+            for (let i = 0; i < numPixels; i++) {
+                const x = Math.floor(Math.random() * canvas.width);
+                const y = Math.floor(Math.random() * canvas.height);
+                const brightness = Math.floor(Math.random() * 255);
+                const opacity = 0.20; // Set the opacity to 50%
+                const color = `rgba(${brightness},${brightness},${brightness},${opacity})`;
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, pixelSize, pixelSize);
+            }
+
+
+        }
+
+        // CONVERT HEX TO RGB TO ADD TRANSPARENCY
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `${r}, ${g}, ${b}`;
+        }
+
+        // ADD RANDOM TRANSPARENCY WITHIN A RANGE
+        function randomTransparency(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // SLIDER EVENT LISTENERS
+        numShapesSlider.addEventListener("input", function () {
+            document.getElementById("numShapesValue").innerHTML = this.value;
+        });
+
+        shapeSizeSlider.addEventListener("input", function () {
+            document.getElementById("shapeSizeValue").innerHTML = this.value;
+        });
+
+        colorPaletteSlider.addEventListener("input", function () {
+            document.getElementById("colorPaletteValue").innerHTML = this.value;
+        });
+
+        canvasSizeInput.addEventListener("input", function () {
+            const size = this.value;
+            canvasSizeValue.textContent = size;
+            myCanvas.width = size;
+            myCanvas.height = size;
+            generateArt();
+        });
+
+        // GENERATE BUTTON
+        const generateButton = document.getElementById("generateButton");
+        generateButton.addEventListener("click", function () {
+            const numShapes = parseInt(numShapesSlider.value);
+            const paletteIndex = parseInt(colorPaletteSlider.value);
+            const colorRange = colorPalettes[paletteIndex];
+            const shapeSize = parseInt(shapeSizeSlider.value);
+            generateShapes(numShapesSlider.value, colorPalettes[colorPaletteSlider.value], shapeSizeSlider.value);
+            addNoise();
+        });
+
+        // SAVE BUTTON
+        const saveButton = document.getElementById("saveButton");
+        saveButton.addEventListener("click", function () {
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.download = "myArt.png";
+            link.href = dataURL;
+            link.click();
+        });
+    </script>
+</body>
+
+</html>
